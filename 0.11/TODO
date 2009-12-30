@@ -1,0 +1,3 @@
+- syntax coloring with pygments
+- check which fonts are included by default on OpenOffice on windows (Liberation ? DejaVu ? Bitstream Vera ?)
+- check page inclusion
