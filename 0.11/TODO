@@ -1,5 +1,4 @@
 - make it possible for the user to replace the contents of the templates dir with his own
-- check which fonts are included by default on OpenOffice on windows (Liberation ? DejaVu ? Bitstream Vera ?)
 - syntax coloring with pygments
 - check page inclusion
 - add a WikiMacro to choose the ODT template
