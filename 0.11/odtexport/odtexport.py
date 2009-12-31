@@ -53,14 +53,14 @@ class ODTExportPlugin(Component):
     def get_supported_conversions(self):
         yield ('odt', 'OpenDocument', 'odt', 'text/x-trac-wiki', 'application/vnd.oasis.opendocument.text', 5)
 
+
     def convert_content(self, req, input_type, content, output_type):
         page_name = req.args.get('page', 'WikiStart')
         #wikipage = WikiPage(self.env, page_name)
         html = self.wiki_to_html(content, req)
         #return (html, "text/plain")
-        templates_dir = resource_filename(__name__, 'templates')
-        odtfile = ODTFile(os.path.join(templates_dir, "wikipage.odt"),
-                          self.env, options={
+        odtfile = ODTFile("wikipage.odt", self.env,
+                          options={
                               "img_max_x": self.img_max_x,
                               "img_max_y": self.img_max_y,
                               "img_dpi": self.img_dpi,
@@ -127,10 +127,15 @@ class ODTExportPlugin(Component):
 
 class ODTFile(object):
 
-    def __init__(self, filename, env, options):
-        self.filename = filename
+
+    def __init__(self, template, env, options):
+        self.template = template
         self.env = env
         self.options = options
+        self.template_dirs = [
+            self.env.get_templates_dir(),
+            resource_filename(__name__, 'templates'),
+        ]
         self.xml = {
             "content": "",
             "styles": "",
@@ -142,7 +147,14 @@ class ODTFile(object):
         self.fonts = {}
 
     def open(self):
-        self.zfile = zipfile.ZipFile(self.filename, "r")
+        filename = None
+        for tpldir in self.template_dirs:
+            filename = os.path.join(tpldir, self.template)
+            if os.path.exists(filename):
+                break
+        if not filename:
+            raise ODTExportError("Can't find ODT template %s" % self.template)
+        self.zfile = zipfile.ZipFile(filename, "r")
         for name in self.zfile.namelist():
             fname = os.path.join(self.tmpdir, name)
             if not os.path.exists(os.path.dirname(fname)):
@@ -307,8 +319,7 @@ class ODTFile(object):
         self.fonts[name] = font
 
     def add_styles(self):
-        templates_dir = resource_filename(__name__, 'templates')
-        odtstyle.add_styles(templates_dir, self.xml["content"],
+        odtstyle.add_styles(self.template_dirs, self.xml["content"],
                             self.import_style, self.import_font)
 
     def compile(self):

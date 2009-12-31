@@ -1,4 +1,4 @@
-- make it possible for the user to replace the contents of the templates dir with his own
+- comments !!
 - syntax coloring with pygments
 - check page inclusion
 - add a WikiMacro to choose the ODT template

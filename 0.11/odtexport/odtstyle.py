@@ -11,9 +11,11 @@ from glob import glob
 style_name_re = re.compile('style:name="([^"]+)"') 
 need_font_re = re.compile('font-name="([^"]+)"')
 
-def _build_style_lib(templates_dir):
+def _build_style_lib(template_dirs):
+    """build a library of available styles"""
+    template_files = _build_templates_list(template_dirs)
     style_lib = {}
-    for style_file in glob(os.path.join(templates_dir, "*.txt")):
+    for style_file in template_files.values():
         style_tpl = open(style_file)
         style_xml = style_tpl.read()
         style_tpl.close()
@@ -22,6 +24,16 @@ def _build_style_lib(templates_dir):
             continue
         style_lib[style["name"]] = style
     return style_lib
+
+def _build_templates_list(template_dirs):
+    """select the preferred template (used-defined or default)"""
+    template_files = {}
+    for template_dir in template_dirs:
+        for style_file in glob(os.path.join(template_dir, "*.txt")):
+            basename = os.path.basename(style_file)
+            if basename not in template_files:
+                template_files[basename] = style_file
+    return template_files
 
 def _build_style(style_xml):
     style_name_mo = style_name_re.search(style_xml)
@@ -39,11 +51,11 @@ def _build_style(style_xml):
     return style
 
 
-def add_styles(templates_dir, content_xml, import_style_callback, import_font_callback):
+def add_styles(template_dirs, content_xml, import_style_callback, import_font_callback):
     """
     Add the missing styles using callbacks
     """
-    style_lib = _build_style_lib(templates_dir)
+    style_lib = _build_style_lib(template_dirs)
     for stylename in style_lib:
         if content_xml.count('style-name="%s"' % stylename) == 0:
             continue # style is not used
@@ -55,8 +67,9 @@ def add_styles(templates_dir, content_xml, import_style_callback, import_font_ca
             font_xml = style_lib[font_name]["xml"]
             import_font_callback(font_xml)
     # now the more complex list and numbering items
+    template_files = _build_templates_list(template_dirs)
     list_styles = '<text:list-style style:name="List_20_1" style:display-name="List 1">'
-    list_item_tpl = open(os.path.join(templates_dir, "list_level.txt"))
+    list_item_tpl = open(template_files["list_level.txt"])
     list_item = list_item_tpl.read()
     list_item_tpl.close()
     for i in range(10):
@@ -64,7 +77,7 @@ def add_styles(templates_dir, content_xml, import_style_callback, import_font_ca
     list_styles += '</text:list-style>'
     import_style_callback(list_styles, True)
     list_styles = '<text:list-style style:name="Numbering_20_1" style:display-name="Numbering 1">'
-    list_item_tpl = open(os.path.join(templates_dir, "numbering_level.txt"))
+    list_item_tpl = open(template_files["numbering_level.txt"])
     list_item = list_item_tpl.read()
     list_item_tpl.close()
     for i in range(10):
