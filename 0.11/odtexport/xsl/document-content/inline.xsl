@@ -129,7 +129,7 @@
 	</text:span>
 </xsl:template>
 
-<xsl:template match="h:code|h:tt">
+<xsl:template match="h:code|h:tt|h:samp|h:kbd">
 	<text:span>
 		<xsl:attribute name="text:style-name">
             <xsl:text>Teletype</xsl:text>
@@ -146,6 +146,68 @@
 	<text:span>
 		<xsl:attribute name="text:style-name">
             <xsl:text>Strike</xsl:text>
+		</xsl:attribute>
+		<xsl:apply-templates/>
+	</text:span>
+</xsl:template>
+
+<xsl:template match="h:abbr|h:acronym">
+	<xsl:apply-templates/>
+	<xsl:variable name="footnotenum"
+	              select="count(preceding::h:abbr) + count(preceding::h:acronym) + 1"/>
+	<text:note text:note-class="footnote">
+		<xsl:attribute name="text:id">
+			<xsl:text>ftn</xsl:text>
+			<xsl:value-of select="$footnotenum"/>
+		</xsl:attribute>
+		<text:note-citation>
+			<xsl:value-of select="$footnotenum"/>
+		</text:note-citation>
+		<text:note-body>
+			<text:p text:style-name="Footnote">
+				<xsl:value-of select="@title"/>
+			</text:p>
+		</text:note-body>
+	</text:note>
+</xsl:template>
+
+<xsl:template match="h:big">
+	<text:span>
+		<xsl:attribute name="text:style-name">
+            <xsl:text>Big</xsl:text>
+		</xsl:attribute>
+		<xsl:apply-templates/>
+	</text:span>
+</xsl:template>
+
+<xsl:template match="h:small">
+	<text:span>
+		<xsl:attribute name="text:style-name">
+            <xsl:text>Small</xsl:text>
+		</xsl:attribute>
+		<xsl:apply-templates/>
+	</text:span>
+</xsl:template>
+
+<xsl:template match="h:cite|h:dfn|h:var">
+	<text:span>
+		<xsl:attribute name="text:style-name">
+            <xsl:text>Citation</xsl:text>
+		</xsl:attribute>
+		<xsl:apply-templates/>
+	</text:span>
+</xsl:template>
+
+<xsl:template match="h:q">
+    <xsl:text>"</xsl:text>
+    <xsl:apply-templates/>
+    <xsl:text>"</xsl:text>
+</xsl:template>
+
+<xsl:template match="h:ins">
+	<text:span>
+		<xsl:attribute name="text:style-name">
+			<xsl:text>Underline</xsl:text>
 		</xsl:attribute>
 		<xsl:apply-templates/>
 	</text:span>

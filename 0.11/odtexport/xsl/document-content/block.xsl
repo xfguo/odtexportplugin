@@ -81,5 +81,14 @@
 		</xsl:choose>
 </xsl:template>
 
+<xsl:template match="h:address">
+	<!-- special formatting is defined in paragraph -->
+	<xsl:call-template name="paragraph"/>
+</xsl:template>
+
+<xsl:template match="h:center">
+	<!-- special formatting is defined in paragraph -->
+	<xsl:call-template name="paragraph"/>
+</xsl:template>
 
 </xsl:stylesheet>
