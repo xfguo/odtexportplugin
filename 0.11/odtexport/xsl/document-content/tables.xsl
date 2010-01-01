@@ -58,6 +58,7 @@
         </table:table-column>
         <!--<xsl:attribute name="table:name"></xsl:attribute>-->
         <xsl:apply-templates/>
+        <xsl:apply-templates select="h:tfoot/*"/>
     </table:table>
     <xsl:if test="h:caption">
         <xsl:variable name="number">
@@ -82,7 +83,7 @@
 </xsl:template>
 
 <xsl:template match="h:tfoot">
-	<xsl:apply-templates/>
+    <!-- handled above in h:table -->
 </xsl:template>
 
 <xsl:template match="h:tbody">
@@ -107,12 +108,23 @@
 	</xsl:choose>
 </xsl:template>
 
-<xsl:template match="h:td|h:th">
+<xsl:template match="h:th">
     <xsl:call-template name="table-cell">
         <xsl:with-param name="horizontal-position" select="count(preceding-sibling::*) + 1"/>
         <xsl:with-param name="horizontal-count" select="count(../*)"/>
         <xsl:with-param name="vertical-position" select="count(../preceding-sibling::h:tr) + 1"/>
-        <xsl:with-param name="vertical-count" select="count(../../*)"/>
+        <xsl:with-param name="vertical-count" select="count(ancestor::h:table[1]/descendant::h:tr)"/>
+    </xsl:call-template>
+</xsl:template>
+
+<xsl:template match="h:td">
+    <xsl:call-template name="table-cell">
+        <xsl:with-param name="horizontal-position" select="count(preceding-sibling::*) + 1"/>
+        <xsl:with-param name="horizontal-count" select="count(../*)"/>
+        <xsl:with-param name="vertical-position" select="count(../preceding-sibling::h:tr)
+                                                       + count(ancestor::h:table[1]/descendant::h:thead/h:tr)
+                                                       + 1"/>
+        <xsl:with-param name="vertical-count" select="count(ancestor::h:table[1]/descendant::h:tr)"/>
     </xsl:call-template>
 </xsl:template>
 
@@ -136,7 +148,7 @@
 		<xsl:attribute name="table:style-name">
 			<xsl:text>table-default.cell-</xsl:text>
 			<!-- prefix -->
-			<xsl:if test="local-name() = 'th'">
+			<xsl:if test="self::h:th">
 				<xsl:text>H-</xsl:text>
 			</xsl:if>
 			<xsl:if test="parent::h:tr/parent::h:tfoot">
@@ -155,6 +167,11 @@
 			-->
 			<xsl:choose>
 			
+				<!-- single -->
+				<xsl:when test="$horizontal-count = 1 and $vertical-count = 1">
+					<xsl:text>single</xsl:text>
+				</xsl:when>
+
 				<!-- A4 -->
 				<xsl:when test="$horizontal-position = 1 and $vertical-count = 1">
 					<xsl:text>A4</xsl:text>
@@ -166,6 +183,19 @@
 				<!-- B4 -->
 				<xsl:when test="$vertical-count = 1">
 					<xsl:text>B4</xsl:text>
+				</xsl:when>
+			
+				<!-- tfoot A -->
+				<xsl:when test="ancestor::h:tfoot and $horizontal-position = 1">
+					<xsl:text>A3</xsl:text>
+				</xsl:when>
+				<!-- tfoot B -->
+				<xsl:when test="ancestor::h:tfoot and $horizontal-position = $horizontal-count">
+					<xsl:text>C3</xsl:text>
+				</xsl:when>
+				<!-- tfoot C -->
+				<xsl:when test="ancestor::h:tfoot">
+					<xsl:text>B3</xsl:text>
 				</xsl:when>
 			
 				<!-- A3 -->
@@ -214,7 +244,7 @@
 		
         <text:p>
             <xsl:choose>
-                <xsl:when test="local-name() = 'th'">
+                <xsl:when test="self::h:th">
                     <xsl:attribute name="text:style-name">Table_20_Heading</xsl:attribute>
                 </xsl:when>
                 <xsl:otherwise>
