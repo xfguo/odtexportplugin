@@ -42,8 +42,8 @@ class ODTExportPlugin(Component):
     """Convert Wiki pages to ODT."""
     implements(IContentConverter)
 
-    img_max_x = Option('odtexport', 'img_max_x', '0')
-    img_max_y = Option('odtexport', 'img_max_y', '0')
+    img_width = Option('odtexport', 'img_default_width', '8cm')
+    img_height = Option('odtexport', 'img_default_height', '6cm')
     img_dpi = Option('odtexport', 'dpi', '96')
     get_remote_images = Option('odtexport', 'get_remote_images', True)
     replace_keyword = Option('odtexport', 'replace_keyword', 'TRAC-ODT-INSERT')
@@ -61,8 +61,8 @@ class ODTExportPlugin(Component):
         #return (html, "text/plain")
         odtfile = ODTFile("wikipage.odt", self.env,
                           options={
-                              "img_max_x": self.img_max_x,
-                              "img_max_y": self.img_max_y,
+                              "img_width": self.img_width,
+                              "img_height": self.img_height,
                               "img_dpi": self.img_dpi,
                               "get_remote_images": self.get_remote_images,
                               "replace_keyword": self.replace_keyword
@@ -183,7 +183,13 @@ class ODTFile(object):
         #return xhtml
         xhtml = etree.fromstring(xhtml) # must be valid xml
         root_url = etree.XSLT.strparam(self.env.abs_href("/"))
-        odt = transform(xhtml, root_url=root_url, heading_minus_level="0")
+        img_width = etree.XSLT.strparam(self.options["img_width"])
+        img_height = etree.XSLT.strparam(self.options["img_height"])
+        odt = transform(xhtml, root_url=root_url,
+                        heading_minus_level="0",
+                        img_default_width=img_width,
+                        img_default_height=img_height,
+                        )
         return str(odt).replace('<?xml version="1.0" encoding="utf-8"?>','')
 
     def handle_images(self, html):
@@ -198,7 +204,8 @@ class ODTFile(object):
         html = re.sub('<img [^>]*src="(%s/chrome/([^"]+))"'
                       % base_url, self.handle_chrome_img, html)
         # Handle remote images
-        if self.options["get_remote_images"]:
+        if self.options["get_remote_images"] and \
+                str(self.options["get_remote_images"].lower()) != "false":
             html = re.sub('<img [^>]*src="(https?://[^"]+)"',
                           self.handle_remote_img, html)
         return html
@@ -247,15 +254,18 @@ class ODTFile(object):
         src = img_mo.group(1)
         self.env.log.debug('Downloading image: %s' % src)
         # TODO: proxy support
-        remoteimg = urllib2.urlopen(src)
-        tmpimg_fd, tmpfile = tempfile.mkstemp()
-        tmpimg = os.fdopen(tmpimg_fd, 'w')
-        tmpimg.write(remoteimg.read())
-        tmpimg.close()
-        remoteimg.close()
-        ret = self.handle_img(img_mo.group(), src, tmpfile)
-        os.remove(tmpfile)
-        return ret
+        try:
+            remoteimg = urllib2.urlopen(src)
+            tmpimg_fd, tmpfile = tempfile.mkstemp()
+            tmpimg = os.fdopen(tmpimg_fd, 'w')
+            tmpimg.write(remoteimg.read())
+            tmpimg.close()
+            remoteimg.close()
+            ret = self.handle_img(img_mo.group(), src, tmpfile)
+            os.remove(tmpfile)
+            return ret
+        except (urllib2.HTTPError, urllib2.URLError):
+            return img_mo.group()
 
     def handle_img(self, full_tag, src, filename):
         self.env.log.debug('Importing image: %s' % filename)
