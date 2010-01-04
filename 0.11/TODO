@@ -1,5 +1,5 @@
 - comments !!
-- syntax coloring with pygments
 - check page inclusion
 - add a WikiMacro to choose the ODT template
 - add WikiMacros for user-defined fields in the ODT template
+- syntax coloring with pygments (that may be impossible...)

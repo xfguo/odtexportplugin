@@ -182,9 +182,14 @@ class ODTFile(object):
         xhtml = self.handle_images(xhtml)
         #return xhtml
         xhtml = etree.fromstring(xhtml) # must be valid xml
-        root_url = etree.XSLT.strparam(self.env.abs_href("/"))
-        img_width = etree.XSLT.strparam(self.options["img_width"])
-        img_height = etree.XSLT.strparam(self.options["img_height"])
+        if hasattr(etree.XSLT, "strparam"):
+            root_url = etree.XSLT.strparam(self.env.abs_href("/"))
+            img_width = etree.XSLT.strparam(self.options["img_width"])
+            img_height = etree.XSLT.strparam(self.options["img_height"])
+        else: # lxml < 2.2
+            root_url = "'%s'" % self.env.abs_href("/")
+            img_width = "'%s'" % self.options["img_width"]
+            img_height = "'%s'" % self.options["img_height"]
         odt = transform(xhtml, root_url=root_url,
                         heading_minus_level="0",
                         img_default_width=img_width,
@@ -205,7 +210,7 @@ class ODTFile(object):
                       % base_url, self.handle_chrome_img, html)
         # Handle remote images
         if self.options["get_remote_images"] and \
-                str(self.options["get_remote_images"].lower()) != "false":
+                str(self.options["get_remote_images"]).lower() != "false":
             html = re.sub('<img [^>]*src="(https?://[^"]+)"',
                           self.handle_remote_img, html)
         return html
