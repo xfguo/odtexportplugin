@@ -14,6 +14,7 @@ import re
 import os
 import zipfile
 import urllib2
+import urlparse
 
 # pylint: disable-msg=E0611
 from pkg_resources import resource_filename
@@ -86,7 +87,7 @@ class ODTExportPlugin(Component):
             wikitext = wikitext.replace('[[%s]]' % macro, '')
 
         # expand image macro shortcut
-        wikitext = re.sub('\[\[Image\(([^\:)]+)\)\]\]', r'[[Image(%s:\1)]]' % page_name, wikitext)
+        wikitext = re.sub('\[\[Image\(([^\:/)]+)\)\]\]', r'[[Image(%s:\3)]]' % page_name, wikitext)
 
         # Now convert wiki to HTML
         context = Context.from_request(req, absurls=True)
@@ -199,8 +200,15 @@ class ODTFile(object):
         base_url = self.env.abs_href("/")
         # Make relative links where it makes sense
         #html = re.sub('<img ([^>]*)src="%s' % base_url, '<img \\1src="', html)
+        base_url_parsed = urlparse.urlparse(base_url)
+        root_url = str("%s://%s" % (base_url_parsed[0], base_url_parsed[1]))
+        # Make server-relative links absolute (we don't know what the
+        # document_root is)
+        html = re.sub('<img ([^>]*)src="(/[^"]+)"',
+                      '<img \\1src="%s\\2"' % root_url, html)
+        html = re.sub('<a ([^>]*)href="(/[^"]+)"',
+                      '<a \\1href="%s\\2"' % root_url, html)
         # Handle attached images
-        #local_imgs = re.findall('<img [^>]*src="(/[^"]+)"', html)
         html = re.sub('<img [^>]*src="(%s/raw-attachment/([^/]+)(?:/([^"]*))?)"'
                       % base_url, self.handle_attached_img, html)
         # Handle chrome images
