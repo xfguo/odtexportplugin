@@ -23,8 +23,8 @@ from PIL import Image
 
 #from trac.core import *
 from trac.core import Component, implements
-from trac.mimeview.api import IContentConverter
-from trac.wiki.formatter import wiki_to_html
+from trac.mimeview.api import IContentConverter, Context
+from trac.wiki.formatter import format_to_html
 from trac.web.chrome import Chrome
 from trac.config import Option
 from trac.attachment import Attachment
