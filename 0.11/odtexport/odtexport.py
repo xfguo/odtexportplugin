@@ -97,15 +97,13 @@ class ODTExportPlugin(Component):
         html = html.encode(self.charset, 'replace')
         # Remove external link icon
         html = re.sub('<span class="icon">.</span>', '', html)
-        # Replace nbsp with entity:
-        # http://www.mail-archive.com/analog-help@lists.meer.net/msg03670.html
-        html = html.replace("\xa0", "&#160;")
         tidy_options = dict(output_xhtml=1, add_xml_decl=1, indent=1,
                             tidy_mark=0, #input_encoding=str(self.charset),
                             output_encoding='utf8', doctype='auto',
                             wrap=0, char_encoding='utf8')
         html = tidy.parseString(html, **tidy_options)
         # Replace nbsp with entity:
+        # http://www.mail-archive.com/analog-help@lists.meer.net/msg03670.html
         html = str(html).replace("&nbsp;", "&#160;")
         # Tidy creates newlines after <pre> (by indenting)
         html = re.sub('<pre([^>]*)>\n', '<pre\\1>', html)
