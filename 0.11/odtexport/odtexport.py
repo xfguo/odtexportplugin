@@ -82,18 +82,16 @@ class ODTExportPlugin(Component):
         #    text = r.sub('', text)
        
         # Remove some macros to avoid wiki processing
-        for macro in ["PageOutline", "TracGuideToc"]:
+        for macro in ["PageOutline", "TracGuideToc", "TOC"]:
             wikitext = wikitext.replace('[[%s]]' % macro, '')
 
         # expand image macro shortcut
         wikitext = re.sub('\[\[Image\(([^\:)]+)\)\]\]', r'[[Image(%s:\1)]]' % page_name, wikitext)
-       
-        #context = Context(Resource('wiki', page_name), req.abs_href, req.perm)
-        #context.req = req
-       
-        # Now convert in that context
-        # TODO: Use format_to_html instead of old wiki_to_html
-        html = wiki_to_html(wikitext, self.env, req, absurls=True)
+
+        # Now convert wiki to HTML
+        context = Context.from_request(req, absurls=True)
+        html = format_to_html(self.env, context, wikitext)
+
         html = html.encode(self.charset, 'replace')
         # Remove external link icon
         html = re.sub('<span class="icon">.</span>', '', html)
