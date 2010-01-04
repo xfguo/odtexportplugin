@@ -59,7 +59,7 @@ class ODTExportPlugin(Component):
         #wikipage = WikiPage(self.env, page_name)
         html = self.wiki_to_html(content, req)
         #return (html, "text/plain")
-        odtfile = ODTFile("wikipage.odt", self.env,
+        odtfile = ODTFile(page_name, "wikipage.odt", self.env,
                           options={
                               "img_width": self.img_width,
                               "img_height": self.img_height,
@@ -124,7 +124,8 @@ class ODTExportPlugin(Component):
 class ODTFile(object):
 
 
-    def __init__(self, template, env, options):
+    def __init__(self, page_name, template, env, options):
+        self.page_name = page_name
         self.template = template
         self.env = env
         self.options = options
@@ -179,11 +180,12 @@ class ODTFile(object):
         #return xhtml
         xhtml = etree.fromstring(xhtml) # must be valid xml
         if hasattr(etree.XSLT, "strparam"):
-            root_url = etree.XSLT.strparam(self.env.abs_href("/"))
+            root_url = etree.XSLT.strparam(
+                    self.env.abs_href("/wiki/%s" % self.page_name))
             img_width = etree.XSLT.strparam(self.options["img_width"])
             img_height = etree.XSLT.strparam(self.options["img_height"])
         else: # lxml < 2.2
-            root_url = "'%s'" % self.env.abs_href("/")
+            root_url = "'%s'" % self.env.abs_href("/wiki/%s" % self.page_name)
             img_width = "'%s'" % self.options["img_width"]
             img_height = "'%s'" % self.options["img_height"]
         odt = transform(xhtml, root_url=root_url,
