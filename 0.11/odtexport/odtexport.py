@@ -87,7 +87,7 @@ class ODTExportPlugin(Component):
             wikitext = wikitext.replace('[[%s]]' % macro, '')
 
         # expand image macro shortcut
-        wikitext = re.sub('\[\[Image\(([^\:/)]+)\)\]\]', r'[[Image(%s:\3)]]' % page_name, wikitext)
+        wikitext = re.sub('\[\[Image\(([^\:/)]+)\)\]\]', r'[[Image(%s:\1)]]' % page_name, wikitext)
 
         # Now convert wiki to HTML
         context = Context.from_request(req, absurls=True)
