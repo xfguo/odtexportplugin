@@ -302,14 +302,14 @@ class ODTFile(object):
         return full_tag.replace(src, newsrc)
 
     def insert_content(self, content):
-        if self.options["replace_keyword"] and \
-            self.xml["content"].count(self.options["replace_keyword"]) > 0:
+        if self.options["replace_keyword"] and self.xml["content"].count(
+                str(self.options["replace_keyword"])) > 0:
             # TODO: this creates an empty line before and after the
             # replace_keyword. It's not optimal, I should use a regexp to
             # remove the previous opening <text:p> tag and the corresponding
             # closing tag.
             self.xml["content"] = self.xml["content"].replace(
-                self.options["replace_keyword"],
+                str(self.options["replace_keyword"]),
                 '</text:p>%s<text:p text:style-name="Text_20_body">' % content)
         else:
             self.xml["content"] = self.xml["content"].replace(
