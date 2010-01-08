@@ -296,8 +296,16 @@ class ODTFile(object):
         else:
             width, height = img.size
             self.env.log.debug('Detected size: %spx x %spx' % (width, height))
-            width = width / float(self.options["img_dpi"]) * INCH_TO_CM
-            height = height / float(self.options["img_dpi"]) * INCH_TO_CM
+            width_mo = re.search('width="([0-9]+)px"', full_tag)
+            if width_mo:
+                newwidth = float(width_mo.group(1)) / float(self.options["img_dpi"]) * INCH_TO_CM
+                height = height * newwidth / width
+                width = newwidth
+                self.env.log.debug('Forced width: %spx. Size will be: %scm x %scm' % (width_mo.group(1), width, height))
+                full_tag = full_tag.replace(width_mo.group(), "")
+            else:
+                width = width / float(self.options["img_dpi"]) * INCH_TO_CM
+                height = height / float(self.options["img_dpi"]) * INCH_TO_CM
             newsrc += '" width="%scm" height="%scm' % (width, height)
         return full_tag.replace(src, newsrc)
 
