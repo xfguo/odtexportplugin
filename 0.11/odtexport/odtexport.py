@@ -181,15 +181,15 @@ class ODTFile(object):
         #return xhtml
         xhtml = etree.fromstring(xhtml) # must be valid xml
         if hasattr(etree.XSLT, "strparam"):
-            root_url = etree.XSLT.strparam(
-                    self.env.abs_href("/wiki/%s" % self.page_name))
+            url = etree.XSLT.strparam(
+                      self.env.abs_href("/wiki/%s" % self.page_name))
             img_width = etree.XSLT.strparam(self.options["img_width"])
             img_height = etree.XSLT.strparam(self.options["img_height"])
         else: # lxml < 2.2
-            root_url = "'%s'" % self.env.abs_href("/wiki/%s" % self.page_name)
+            url = "'%s'" % self.env.abs_href("/wiki/%s" % self.page_name)
             img_width = "'%s'" % self.options["img_width"]
             img_height = "'%s'" % self.options["img_height"]
-        odt = transform(xhtml, root_url=root_url,
+        odt = transform(xhtml, url=url,
                         heading_minus_level="0",
                         img_default_width=img_width,
                         img_default_height=img_height,
@@ -296,7 +296,7 @@ class ODTFile(object):
         else:
             width, height = img.size
             self.env.log.debug('Detected size: %spx x %spx' % (width, height))
-            width_mo = re.search('width="([0-9]+)px"', full_tag)
+            width_mo = re.search('width="([0-9]+)(?:px)?"', full_tag)
             if width_mo:
                 newwidth = float(width_mo.group(1)) / float(self.options["img_dpi"]) * INCH_TO_CM
                 height = height * newwidth / width

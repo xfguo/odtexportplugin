@@ -63,7 +63,7 @@
     <xsl:attribute name="xlink:type"><xsl:text>simple</xsl:text></xsl:attribute>
     <xsl:attribute name="xlink:href">
         <xsl:choose>
-            <xsl:when test="contains(@href, '#') and substring-before(@href,'#') = $root_url">
+            <xsl:when test="contains(@href, '#') and substring-before(@href,'#') = $url">
                 <xsl:text>#</xsl:text><xsl:value-of select="substring-after(@href,'#')"/>
             </xsl:when>
             <xsl:otherwise>
@@ -94,13 +94,13 @@
 
 
 <xsl:template match="h:em|h:i">
-    <text:span text:style-name="Emphasis">
+    <text:span text:style-name="emphasis">
         <xsl:apply-templates/>
     </text:span>
 </xsl:template>
 
 <xsl:template match="h:strong|h:b">
-    <text:span text:style-name="Strong_20_Emphasis">
+    <text:span text:style-name="strong">
         <xsl:apply-templates/>
     </text:span>
 </xsl:template>
