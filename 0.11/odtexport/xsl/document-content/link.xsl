@@ -44,54 +44,77 @@
     version="1.0">
 
 
-
-<xsl:template match="h:blockquote">
-    <!-- special formatting is defined in paragraph -->
-    <xsl:apply-templates/>
+<xsl:template match="h:a">
+    <xsl:call-template name="link">
+        <xsl:with-param name="mode" select="''"/>
+    </xsl:call-template>
+</xsl:template>
+<xsl:template match="h:a" mode="inparagraph">
+    <xsl:call-template name="link">
+        <xsl:with-param name="mode" select="'inparagraph'"/>
+    </xsl:call-template>
 </xsl:template>
 
-<xsl:template match="h:hr">
-    <text:p text:style-name="Horizontal_20_Line"/>
-</xsl:template>
-<xsl:template match="h:hr" mode="inparagraph"/>
-
-<xsl:template match="h:pre">
-    <text:p text:style-name="Preformatted_20_Text">
-        <xsl:call-template name="pre.line">
-            <xsl:with-param name="content" select="string(.)"/>
-        </xsl:call-template>
-    </text:p>
-</xsl:template>
-<xsl:template match="h:pre" mode="inparagraph"/>
-
-<xsl:template name="pre.line">
-    <xsl:param name="content"/>
+<xsl:template name="link">
+    <xsl:param name="mode"/>
     <xsl:choose>
-        <xsl:when test="contains($content, '&#10;')">
-            <xsl:value-of select="substring-before($content, '&#10;')"/>
-            <xsl:if test="substring-after($content, '&#10;') != ''">
-                <text:line-break/>
-                <xsl:call-template name="pre.line">
-                    <xsl:with-param name="content" select="substring-after($content, '&#10;')"/>
+        <xsl:when test="h:img">
+            <draw:a>
+                <xsl:call-template name="link-content">
+                    <xsl:with-param name="mode" select="$mode"/>
                 </xsl:call-template>
-            </xsl:if>
+            </draw:a>
         </xsl:when>
         <xsl:otherwise>
-            <xsl:value-of select="string($content)"/>
+            <text:a>
+                <xsl:call-template name="link-content">
+                    <xsl:with-param name="mode" select="$mode"/>
+                </xsl:call-template>
+            </text:a>
         </xsl:otherwise>
     </xsl:choose>
 </xsl:template>
 
-<xsl:template match="h:address">
-    <!-- special formatting is defined in paragraph -->
-    <xsl:call-template name="paragraph"/>
+<xsl:template name="link-content">
+    <xsl:param name="mode"/>
+    <xsl:attribute name="xlink:type"><xsl:text>simple</xsl:text></xsl:attribute>
+    <xsl:attribute name="xlink:href">
+        <xsl:choose>
+            <xsl:when test="contains(@href, '#') and substring-before(@href,'#') = $url">
+                <xsl:text>#</xsl:text><xsl:value-of select="substring-after(@href,'#')"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="@href"/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:attribute>
+    <xsl:choose>
+        <xsl:when test="@id">
+            <text:bookmark-start>
+                <xsl:attribute name="text:name">
+                    <xsl:value-of select="@id"/>
+                </xsl:attribute>
+            </text:bookmark-start>
+        </xsl:when>
+    </xsl:choose>
+    <xsl:choose>
+        <xsl:when test="$mode = 'inparagraph'">
+            <xsl:apply-templates mode="inparagraph"/>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:apply-templates/>
+        </xsl:otherwise>
+    </xsl:choose>
+    <xsl:choose>
+        <xsl:when test="@id">
+            <text:bookmark-end>
+                <xsl:attribute name="text:name">
+                    <xsl:value-of select="@id"/>
+                </xsl:attribute>
+            </text:bookmark-end>
+        </xsl:when>
+    </xsl:choose>
 </xsl:template>
-<xsl:template match="h:address" mode="inparagraph"/>
 
-<xsl:template match="h:center">
-    <!-- special formatting is defined in paragraph -->
-    <xsl:call-template name="paragraph"/>
-</xsl:template>
-<xsl:template match="h:center" mode="inparagraph"/>
 
 </xsl:stylesheet>

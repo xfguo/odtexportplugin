@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 setup(name='OdtExportPlugin',
-      version='0.2',
+      version='0.3',
       packages=['odtexport'],
       author='Aurelien Bompard',
       author_email='aurelien@bompard.org',

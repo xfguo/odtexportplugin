@@ -44,97 +44,56 @@
     version="1.0">
 
 
-<xsl:template match="h:a">
-    <xsl:choose>
-        <xsl:when test="h:img">
-            <draw:a>
-                <xsl:call-template name="link"/>
-            </draw:a>
-        </xsl:when>
-        <xsl:otherwise>
-            <text:a>
-                <xsl:call-template name="link"/>
-            </text:a>
-        </xsl:otherwise>
-    </xsl:choose>
-</xsl:template>
-
-<xsl:template name="link">
-    <xsl:attribute name="xlink:type"><xsl:text>simple</xsl:text></xsl:attribute>
-    <xsl:attribute name="xlink:href">
-        <xsl:choose>
-            <xsl:when test="contains(@href, '#') and substring-before(@href,'#') = $url">
-                <xsl:text>#</xsl:text><xsl:value-of select="substring-after(@href,'#')"/>
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:value-of select="@href"/>
-            </xsl:otherwise>
-        </xsl:choose>
-    </xsl:attribute>
-    <xsl:choose>
-        <xsl:when test="@id">
-            <text:bookmark-start>
-                <xsl:attribute name="text:name">
-                    <xsl:value-of select="@id"/>
-                </xsl:attribute>
-            </text:bookmark-start>
-        </xsl:when>
-    </xsl:choose>
-    <xsl:apply-templates/>
-    <xsl:choose>
-        <xsl:when test="@id">
-            <text:bookmark-end>
-                <xsl:attribute name="text:name">
-                    <xsl:value-of select="@id"/>
-                </xsl:attribute>
-            </text:bookmark-end>
-        </xsl:when>
-    </xsl:choose>
-</xsl:template>
-
-
-<xsl:template match="h:em|h:i">
+<xsl:template match="h:em|h:i"/>
+<xsl:template match="h:em|h:i" mode="inparagraph">
     <text:span text:style-name="emphasis">
-        <xsl:apply-templates/>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:span>
 </xsl:template>
 
-<xsl:template match="h:strong|h:b">
+<xsl:template match="h:strong|h:b"/>
+<xsl:template match="h:strong|h:b" mode="inparagraph">
     <text:span text:style-name="strong">
-        <xsl:apply-templates/>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:span>
 </xsl:template>
 
-<xsl:template match="h:sup">
+<xsl:template match="h:sup"/>
+<xsl:template match="h:sup" mode="inparagraph">
     <text:span text:style-name="sup">
-        <xsl:apply-templates/>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:span>
 </xsl:template>
 
-<xsl:template match="h:sub">
+<xsl:template match="h:sub"/>
+<xsl:template match="h:sub" mode="inparagraph">
     <text:span text:style-name="sub">
-        <xsl:apply-templates/>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:span>
 </xsl:template>
 
-<xsl:template match="h:code|h:tt|h:samp|h:kbd">
+<xsl:template match="h:code|h:tt|h:samp|h:kbd"/>
+<xsl:template match="h:code|h:tt|h:samp|h:kbd" mode="inparagraph">
     <text:span text:style-name="Teletype">
-        <xsl:apply-templates/>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:span>
 </xsl:template>
 
-<xsl:template match="h:br">
+<xsl:template match="h:br"/>
+<xsl:template match="h:br" mode="inparagraph">
     <text:line-break/>
 </xsl:template>
 
-<xsl:template match="h:del">
+<xsl:template match="h:del"/>
+<xsl:template match="h:del" mode="inparagraph">
     <text:span text:style-name="strike">
-        <xsl:apply-templates/>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:span>
 </xsl:template>
 
-<xsl:template match="h:abbr|h:acronym">
-    <xsl:apply-templates/>
+<xsl:template match="h:abbr|h:acronym"/>
+<xsl:template match="h:abbr|h:acronym" mode="inparagraph">
+    <xsl:apply-templates mode="inparagraph"/>
     <xsl:variable name="footnotenum"
                   select="count(preceding::h:abbr) + count(preceding::h:acronym) + 1"/>
     <text:note text:note-class="footnote">
@@ -153,33 +112,38 @@
     </text:note>
 </xsl:template>
 
-<xsl:template match="h:big">
+<xsl:template match="h:big"/>
+<xsl:template match="h:big" mode="inparagraph">
     <text:span text:style-name="big">
-        <xsl:apply-templates/>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:span>
 </xsl:template>
 
-<xsl:template match="h:small">
+<xsl:template match="h:small"/>
+<xsl:template match="h:small" mode="inparagraph">
     <text:span text:style-name="small">
-        <xsl:apply-templates/>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:span>
 </xsl:template>
 
-<xsl:template match="h:cite|h:dfn|h:var">
+<xsl:template match="h:cite|h:dfn|h:var"/>
+<xsl:template match="h:cite|h:dfn|h:var" mode="inparagraph">
     <text:span text:style-name="Citation">
-        <xsl:apply-templates/>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:span>
 </xsl:template>
 
-<xsl:template match="h:q">
+<xsl:template match="h:q"/>
+<xsl:template match="h:q" mode="inparagraph">
     <xsl:text>"</xsl:text>
-    <xsl:apply-templates/>
+    <xsl:apply-templates mode="inparagraph"/>
     <xsl:text>"</xsl:text>
 </xsl:template>
 
-<xsl:template match="h:ins">
+<xsl:template match="h:ins"/>
+<xsl:template match="h:ins" mode="inparagraph">
     <text:span text:style-name="underline">
-        <xsl:apply-templates/>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:span>
 </xsl:template>
 
