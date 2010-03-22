@@ -84,7 +84,7 @@ class ODTExportPlugin(Component):
        
         # Remove some macros to avoid wiki processing
         for macro in ["PageOutline", "TracGuideToc", "TOC"]:
-            wikitext = wikitext.replace('[[%s]]' % macro, '')
+            wikitext = re.sub('\[\[%s(\([^)]*\))\]\]' % macro, "", wikitext)
 
         # expand image macro shortcut
         wikitext = re.sub('\[\[Image\(([^\:/)]+)\)\]\]', r'[[Image(%s:\1)]]' % page_name, wikitext)
