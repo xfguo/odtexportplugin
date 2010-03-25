@@ -48,7 +48,6 @@ class ODTExportPlugin(Component):
     img_dpi = Option('odtexport', 'dpi', '96')
     get_remote_images = Option('odtexport', 'get_remote_images', True)
     replace_keyword = Option('odtexport', 'replace_keyword', 'TRAC-ODT-INSERT')
-    charset = Option('trac', 'default_charset', 'utf-8')
 
     # IContentConverter methods
     def get_supported_conversions(self):
@@ -93,11 +92,11 @@ class ODTExportPlugin(Component):
         context = Context.from_request(req, absurls=True)
         html = format_to_html(self.env, context, wikitext)
 
-        html = html.encode(self.charset, 'replace')
+        html = html.encode("utf-8", 'replace')
         # Remove external link icon
         html = re.sub('<span class="icon">.</span>', '', html)
         tidy_options = dict(output_xhtml=1, add_xml_decl=1, indent=1,
-                            tidy_mark=0, #input_encoding=str(self.charset),
+                            tidy_mark=0, input_encoding='utf8',
                             output_encoding='utf8', doctype='auto',
                             wrap=0, char_encoding='utf8')
         html = tidy.parseString(html, **tidy_options)
