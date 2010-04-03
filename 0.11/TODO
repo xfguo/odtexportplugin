@@ -1,9 +1,6 @@
 - merge new version of xhtml2odt
-- add tags to remove text from the template
 - resize image if it's too large
-- understand why some macro fail (like [[TOC]])
 - comments !!
 - check page inclusion
-- add a WikiMacro to choose the ODT template
 - add WikiMacros for user-defined fields in the ODT template
 - syntax coloring with pygments (that may be impossible...)

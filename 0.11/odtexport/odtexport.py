@@ -25,17 +25,19 @@ from PIL import Image
 #from trac.core import *
 from trac.core import Component, implements
 from trac.mimeview.api import IContentConverter, Context
-from trac.wiki.formatter import format_to_html
+from trac.wiki import Formatter
+from trac.util.html import Markup
 from trac.web.chrome import Chrome
-from trac.config import Option
+from trac.config import Option, IntOption, BoolOption, ListOption
 from trac.attachment import Attachment
 
 import odtstyle
 
 #pylint: disable-msg=C0301,C0111
 
-INCH_TO_CM = 2.54
+__all__ = ("ODTExportPlugin")
 
+INCH_TO_CM = 2.54
 
 class ODTExportError(Exception): pass
 
@@ -45,27 +47,36 @@ class ODTExportPlugin(Component):
 
     img_width = Option('odtexport', 'img_default_width', '8cm')
     img_height = Option('odtexport', 'img_default_height', '6cm')
-    img_dpi = Option('odtexport', 'dpi', '96')
-    get_remote_images = Option('odtexport', 'get_remote_images', True)
+    img_dpi = IntOption('odtexport', 'dpi', '96')
+    get_remote_images = BoolOption('odtexport', 'get_remote_images', True)
     replace_keyword = Option('odtexport', 'replace_keyword', 'TRAC-ODT-INSERT')
+    cut_start_keyword = Option('odtexport', 'cut_start_keyword',
+                               'TRAC-ODT-CUT-START')
+    cut_stop_keyword = Option('odtexport', 'cut_stop_keyword',
+                              'TRAC-ODT-CUT-STOP')
+    remove_macros = ListOption('odtexport', 'remove_macros',
+                           ["PageOutline", "TracGuideToc", "TOC"])
 
     # IContentConverter methods
     def get_supported_conversions(self):
         yield ('odt', 'OpenDocument', 'odt', 'text/x-trac-wiki', 'application/vnd.oasis.opendocument.text', 5)
 
 
-    def convert_content(self, req, input_type, content, output_type):
+    def convert_content(self, req, input_type, content, output_type): # pylint: disable-msg=W0613
         page_name = req.args.get('page', 'WikiStart')
         #wikipage = WikiPage(self.env, page_name)
+        template = self.get_template(content) + ".odt"
         html = self.wiki_to_html(content, req)
         #return (html, "text/plain")
-        odtfile = ODTFile(page_name, "wikipage.odt", self.env,
+        odtfile = ODTFile(page_name, template, self.env, # pylint: disable-msg=E1101
                           options={
                               "img_width": self.img_width,
                               "img_height": self.img_height,
                               "img_dpi": self.img_dpi,
                               "get_remote_images": self.get_remote_images,
-                              "replace_keyword": self.replace_keyword
+                              "replace_keyword": self.replace_keyword,
+                              "cut_start_keyword": self.cut_start_keyword,
+                              "cut_stop_keyword": self.cut_stop_keyword,
                           })
         odtfile.open()
         #return (odtfile.import_xhtml(html), "text/plain")
@@ -73,28 +84,30 @@ class ODTExportPlugin(Component):
         newdoc = odtfile.save()
         return (newdoc, "application/vnd.oasis.opendocument.text")
 
+    def get_template(self, wikitext):
+        template_macro = re.search('\[\[OdtTemplate\(([^)]+)\)\]\]', wikitext)
+        if template_macro:
+            return template_macro.group(1)
+        return "wikipage"
+
     def wiki_to_html(self, wikitext, req):
-        self.env.log.debug('start function wiki_to_html')
+        self.env.log.debug('start function wiki_to_html') # pylint: disable-msg=E1101
         page_name = req.args.get('page', 'WikiStart')
 
-        ##Remove exclude expressions
-        #for r in EXCLUDE_RES:
-        #    text = r.sub('', text)
-       
-        # Remove some macros to avoid wiki processing
-        for macro in ["PageOutline", "TracGuideToc", "TOC"]:
-            wikitext = re.sub('\[\[%s(\([^)]*\))\]\]' % macro, "", wikitext)
-
-        # expand image macro shortcut
-        wikitext = re.sub('\[\[Image\(([^\:/)]+)\)\]\]', r'[[Image(%s:\1)]]' % page_name, wikitext)
+        # Remove some macros (TOC is better handled in ODT itself)
+        for macro in self.remove_macros:
+            wikitext = re.sub('\[\[%s(\([^)]*\))?\]\]' % macro, "", wikitext)
 
         # Now convert wiki to HTML
+        out = StringIO()
         context = Context.from_request(req, absurls=True)
-        html = format_to_html(self.env, context, wikitext)
-
+        Formatter(self.env, # pylint: disable-msg=E1101
+                  context('wiki', page_name)).format(wikitext, out)
+        html = Markup(out.getvalue())
         html = html.encode("utf-8", 'replace')
-        # Remove external link icon
-        html = re.sub('<span class="icon">.</span>', '', html)
+
+        # Clean up the HTML
+        html = re.sub('<span class="icon">.</span>', '', html) # Remove external link icon
         tidy_options = dict(output_xhtml=1, add_xml_decl=1, indent=1,
                             tidy_mark=0, input_encoding='utf8',
                             output_encoding='utf8', doctype='auto',
@@ -142,12 +155,14 @@ class ODTFile(object):
         self.autostyles = {}
         self.style_name_re = re.compile('style:name="([^"]+)"') 
         self.fonts = {}
+        self.zfile = None
 
     def open(self):
         filename = None
         for tpldir in self.template_dirs:
-            filename = os.path.join(tpldir, self.template)
-            if os.path.exists(filename):
+            cur_filename = os.path.join(tpldir, self.template)
+            if os.path.exists(cur_filename):
+                filename = cur_filename
                 break
         if not filename:
             raise ODTExportError("Can't find ODT template %s" % self.template)
@@ -246,10 +261,10 @@ class ODTFile(object):
         src, prefix, filename = img_mo.groups()
         chrome = Chrome(self.env)
         for provider in chrome.template_providers:
-            for dir in [os.path.normpath(dir[1]) for dir
-                        in provider.get_htdocs_dirs() if dir[0] == prefix]:
-                path = os.path.normpath(os.path.join(dir, filename))
-                assert os.path.commonprefix([dir, path]) == dir
+            for tpdir in [os.path.normpath(htdir[1]) for htdir
+                        in provider.get_htdocs_dirs() if htdir[0] == prefix]:
+                path = os.path.normpath(os.path.join(tpdir, filename))
+                assert os.path.commonprefix([tpdir, path]) == tpdir
                 if os.path.isfile(path):
                     return self.handle_img(img_mo.group(), src, path)
         # fallback
@@ -309,19 +324,28 @@ class ODTFile(object):
         return full_tag.replace(src, newsrc)
 
     def insert_content(self, content):
+        self.options["replace_keyword"] = str(self.options["replace_keyword"])
+        self.options["cut_start_keyword"] = str(self.options["cut_start_keyword"])
+        self.options["cut_stop_keyword"] = str(self.options["cut_stop_keyword"])
         if self.options["replace_keyword"] and self.xml["content"].count(
-                str(self.options["replace_keyword"])) > 0:
-            # TODO: this creates an empty line before and after the
-            # replace_keyword. It's not optimal, I should use a regexp to
-            # remove the previous opening <text:p> tag and the corresponding
-            # closing tag.
-            self.xml["content"] = self.xml["content"].replace(
-                str(self.options["replace_keyword"]),
-                '</text:p>%s<text:p text:style-name="Text_20_body">' % content)
+                self.options["replace_keyword"]) > 0:
+            self.xml["content"] = re.sub(
+                    "<text:p[^>]*>" +
+                    re.escape(self.options["replace_keyword"])
+                    +"</text:p>", content, self.xml["content"])
         else:
             self.xml["content"] = self.xml["content"].replace(
                 '</office:text>',
                 content + '</office:text>')
+        # Cut unwanted text
+        if self.xml["content"].count(self.options["cut_start_keyword"]) > 0 \
+                and self.xml["content"].count(
+                    self.options["cut_stop_keyword"]) > 0:
+            self.xml["content"] = re.sub(
+                    re.escape(self.options["cut_start_keyword"])
+                    + ".*" +
+                    re.escape(self.options["cut_stop_keyword"]),
+                    "", self.xml["content"])
 
     def import_style(self, style, is_mainstyle=False):
         style_name_mo = self.style_name_re.search(style)
@@ -386,11 +410,12 @@ class ODTFile(object):
         document = StringIO()
         newzf = zipfile.ZipFile(document, "w", zipfile.ZIP_DEFLATED)
         for root, dirs, files in os.walk(self.tmpdir):
-            for file in files:
-                realpath = os.path.join(root, file)
-                internalpath = os.path.join(root.replace(self.tmpdir, ""), file)
+            for cur_file in files:
+                realpath = os.path.join(root, cur_file)
+                internalpath = os.path.join(root.replace(self.tmpdir, ""), cur_file)
                 newzf.write(realpath, internalpath)
         newzf.close()
         shutil.rmtree(self.tmpdir)
         # Return the StringIO
         return document.getvalue()
+

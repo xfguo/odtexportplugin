@@ -51,7 +51,8 @@ def _build_style(style_xml):
     return style
 
 
-def add_styles(template_dirs, content_xml, import_style_callback, import_font_callback):
+def add_styles(template_dirs, content_xml, import_style_callback,
+        import_font_callback):
     """
     Add the missing styles using callbacks
     """
