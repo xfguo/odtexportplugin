@@ -88,7 +88,11 @@ class ODTExportPlugin(Component):
     def get_template_name(self, wikitext):
         template_macro = re.search('\[\[OdtTemplate\(([^)]+)\)\]\]', wikitext)
         if template_macro:
-            return "%s.odt" % template_macro.group(1)
+            tpl = template_macro.group(1)
+            if tpl.endswith(".odt"):
+                return tpl
+            else:
+                return "%s.odt" % tpl
         return "wikipage.odt"
 
     def wiki_to_html(self, wikitext, req):
