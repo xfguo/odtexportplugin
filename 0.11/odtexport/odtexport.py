@@ -27,6 +27,7 @@ from trac.core import Component, implements
 from trac.mimeview.api import IContentConverter, Context
 from trac.wiki import Formatter
 from trac.util.html import Markup
+from trac.util.text import unicode_quote
 from trac.web.chrome import Chrome
 from trac.config import Option, IntOption, BoolOption, ListOption
 from trac.attachment import Attachment
@@ -63,12 +64,12 @@ class ODTExportPlugin(Component):
 
 
     def convert_content(self, req, input_type, content, output_type): # pylint: disable-msg=W0613
-        page_name = req.args.get('page', 'WikiStart')
-        #wikipage = WikiPage(self.env, page_name)
-        template = self.get_template(content) + ".odt"
+        self.page_name = req.args.get('page', 'WikiStart')
+        #wikipage = WikiPage(self.env, self.page_name)
+        template = self.get_template_name(content)
         html = self.wiki_to_html(content, req)
         #return (html, "text/plain")
-        odtfile = ODTFile(page_name, template, self.env, # pylint: disable-msg=E1101
+        odtfile = ODTFile(self.page_name, template, self.env, # pylint: disable-msg=E1101
                           options={
                               "img_width": self.img_width,
                               "img_height": self.img_height,
@@ -84,15 +85,14 @@ class ODTExportPlugin(Component):
         newdoc = odtfile.save()
         return (newdoc, "application/vnd.oasis.opendocument.text")
 
-    def get_template(self, wikitext):
+    def get_template_name(self, wikitext):
         template_macro = re.search('\[\[OdtTemplate\(([^)]+)\)\]\]', wikitext)
         if template_macro:
-            return template_macro.group(1)
-        return "wikipage"
+            return "%s.odt" % template_macro.group(1)
+        return "wikipage.odt"
 
     def wiki_to_html(self, wikitext, req):
         self.env.log.debug('start function wiki_to_html') # pylint: disable-msg=E1101
-        page_name = req.args.get('page', 'WikiStart')
 
         # Remove some macros (TOC is better handled in ODT itself)
         for macro in self.remove_macros:
@@ -102,7 +102,7 @@ class ODTExportPlugin(Component):
         out = StringIO()
         context = Context.from_request(req, absurls=True)
         Formatter(self.env, # pylint: disable-msg=E1101
-                  context('wiki', page_name)).format(wikitext, out)
+                  context('wiki', self.page_name)).format(wikitext, out)
         html = Markup(out.getvalue())
         html = html.encode("utf-8", 'replace')
 
@@ -122,20 +122,36 @@ class ODTExportPlugin(Component):
 
 #    def get_title(self, wikitext, req):
 #        '''Get page title from first header in outline'''
-#        page_name = req.args.get('page', 'WikiStart')
 #        out = StringIO()
-#        context = Context(Resource('wiki', page_name), req.abs_href, req.perm)
+#        context = Context(Resource('wiki', self.page_name), req.abs_href, req.perm)
 #        context.req = req
 #        outline = OutlineFormatter(self.env, context)
 #        outline.format(wikitext, out, 1, 1)
 #        for depth, anchor, text in outline.outline:
 #            if depth == 1:
 #                return text
-#        return page_name
+#        return self.page_name
 
 
 class ODTFile(object):
+    """
+    The class doing the actual conversion from XHTML to ODT
 
+    The ODT template name is given as an argument to the constructor, and will
+    be looked for in the directories of `template_dirs`. Those
+    directories are, in order:
+
+    1. the attachments of the current page
+    2. the ``templates`` subdirectory of the Trac instance
+    3. the ``templates`` subdirectory of the odt plugin installation
+
+    :ivar page_name: the wiki page name
+    :type page_name: str
+    :ivar template: the filename of the ODT template (without the path)
+    :type template: str
+    :ivar template_dirs: the list of directories to search for the ODT
+        template. The first match found is used. 
+    """
 
     def __init__(self, page_name, template, env, options):
         self.page_name = page_name
@@ -146,6 +162,8 @@ class ODTFile(object):
             self.env.get_templates_dir(),
             resource_filename(__name__, 'templates'),
         ]
+        self.template_dirs.insert(0, os.path.join(self.env.path,
+                'attachments', "wiki", unicode_quote(self.page_name)))
         self.xml = {
             "content": "",
             "styles": "",
@@ -157,16 +175,16 @@ class ODTFile(object):
         self.fonts = {}
         self.zfile = None
 
-    def open(self):
-        filename = None
+    def get_template_path(self):
         for tpldir in self.template_dirs:
             cur_filename = os.path.join(tpldir, self.template)
             if os.path.exists(cur_filename):
-                filename = cur_filename
-                break
-        if not filename:
-            raise ODTExportError("Can't find ODT template %s" % self.template)
-        self.zfile = zipfile.ZipFile(filename, "r")
+                return os.path.normpath(cur_filename)
+        raise ODTExportError("Can't find ODT template %s" % self.template)
+
+    def open(self):
+        template = self.get_template_path()
+        self.zfile = zipfile.ZipFile(template, "r")
         for name in self.zfile.namelist():
             fname = os.path.join(self.tmpdir, name)
             if not os.path.exists(os.path.dirname(fname)):

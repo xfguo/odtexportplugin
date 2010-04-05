@@ -6,6 +6,8 @@ import os
 import re
 from glob import glob
 
+__all__ = ("add_styles",)
+
 # pylint: disable-msg=C0103
 
 style_name_re = re.compile('style:name="([^"]+)"') 
