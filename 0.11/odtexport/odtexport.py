@@ -56,7 +56,7 @@ class ODTExportPlugin(Component):
     cut_stop_keyword = Option('odtexport', 'cut_stop_keyword',
                               'TRAC-ODT-CUT-STOP')
     remove_macros = ListOption('odtexport', 'remove_macros',
-                           ["PageOutline", "TracGuideToc", "TOC"])
+                               "PageOutline, TracGuideToc, TOC")
 
     # IContentConverter methods
     def get_supported_conversions(self):
