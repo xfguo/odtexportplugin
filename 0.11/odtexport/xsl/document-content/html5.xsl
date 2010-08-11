@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--
     
     xhtml2odt - XHTML to ODT XML transformation.
@@ -48,69 +48,75 @@
     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:presentation="urn:oasis:names:tc:opendocument:xmlns:presentation:1.0"
-    exclude-result-prefixes="office xsl dc text style table draw fo xlink meta number svg chart dr3d math form script dom xforms xsd xsi presentation h"
     version="1.0">
-    
-<!-- SETTINGS -->
-<xsl:decimal-format name="staff" digit="D" />
-<xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="utf-8"/>
-<!--<xsl:strip-space elements="*"/>-->
-<!--<xsl:preserve-space elements=""/>-->
 
 
-<xsl:include href="param.xsl"/>
-<xsl:include href="document-content.xsl"/>
-<xsl:include href="specific.xsl"/>
-
-
-<xsl:template match="/">
+<xsl:template match="h:section">
     <xsl:apply-templates/>
 </xsl:template>
 
-<!-- ignore ODT paragraph inside ODT paragraphs -->
-<xsl:template match="text:p">
-    <xsl:choose>
-        <xsl:when test="
-            descendant::h:p|
-            child::h:h1|
-            child::h:h2|
-            child::h:h3|
-            child::h:h4|
-            child::h:h5|
-            child::h:h6
-            ">
-            <!-- continue without text:p creation to child element -->
-            
-            <!-- when in this block is some text, display it in paragraph -->
-            <!-- this is not functional
-            <text:p>
-                <xsl:value-of select="string(.)"/>
-            </text:p>
-            -->
-            <!-- call template for each found element -->
-            <xsl:for-each select="*">
-                <xsl:apply-templates select="."/>
-            </xsl:for-each>
-        </xsl:when>
-        <xsl:otherwise>
-            <xsl:copy>
-                <xsl:copy-of select="@*"/>
+<xsl:template match="h:header">
+    <xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="h:footer">
+    <xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="h:summary">
+    <!-- TODO: Add space on the left and right of the text -->
+    <xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="h:article">
+    <xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="h:nav"/> <!-- only keep the content -->
+
+<xsl:template match="h:aside">
+    <text:p text:style-name="Text_20_body">
+        <draw:frame draw:style-name="Marginalia"
+                    text:anchor-type="paragraph"
+                    svg:width="8.5cm" style:rel-width="50%">
+            <draw:text-box fo:min-height="0.5cm">
                 <xsl:apply-templates/>
-            </xsl:copy>
-        </xsl:otherwise>
-    </xsl:choose>
+            </draw:text-box>
+        </draw:frame>
+    </text:p>
 </xsl:template>
 
-<!-- Leave alone unknown tags -->
-<xsl:template match="*">
-    <xsl:if test="$debug">
-        <xsl:comment>Unknown tag : <xsl:value-of select="name(.)"/><xsl:value-of select="."/></xsl:comment>
-    </xsl:if>
-    <xsl:copy>
-        <xsl:copy-of select="@*"/>
-        <xsl:apply-templates/>
-    </xsl:copy>
+<xsl:template match="h:hgroup">
+    <xsl:apply-templates/>
 </xsl:template>
 
+<xsl:template match="h:time" mode="inparagraph">
+    <xsl:apply-templates mode="inparagraph"/>
+</xsl:template>
+<xsl:template match="h:time"/>
+
+<xsl:template match="h:mark" mode="inparagraph">
+    <!-- TODO: make the text background color yellow -->
+    <xsl:apply-templates mode="inparagraph"/>
+</xsl:template>
+
+<xsl:template match="h:canvas"/>
+
+<!-- TODO: include the source ? -->
+<xsl:template match="h:audio"/>
+<xsl:template match="h:video"/>
+<xsl:template match="h:source"/>
+
+<!-- form elements -->
+<xsl:template match="h:command|h:datalist|h:details|h:meter|h:output|h:progress|h:keygen"/>
+
+<!-- TODO: make a frame around it -->
+<xsl:template match="h:figure"/>
+<xsl:template match="h:figcaption"/>
+
+<xsl:template match="h:ruby|h:rt|h:rp" mode="inparagraph">
+    <xsl:apply-templates mode="inparagraph"/>
+</xsl:template>
+<xsl:template match="h:ruby|h:rt|h:rp"/>
 
 </xsl:stylesheet>

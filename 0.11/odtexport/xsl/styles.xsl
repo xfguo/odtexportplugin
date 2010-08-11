@@ -59,58 +59,68 @@
 
 
 <xsl:include href="param.xsl"/>
-<xsl:include href="document-content.xsl"/>
-<xsl:include href="specific.xsl"/>
+<xsl:include href="styles/automatic-styles.xsl"/>
+<xsl:include href="styles/main-styles.xsl"/>
+<xsl:include href="styles/fonts.xsl"/>
+<xsl:include href="styles/highlight.xsl"/>
 
 
 <xsl:template match="/">
     <xsl:apply-templates/>
 </xsl:template>
 
-<!-- ignore ODT paragraph inside ODT paragraphs -->
-<xsl:template match="text:p">
-    <xsl:choose>
-        <xsl:when test="
-            descendant::h:p|
-            child::h:h1|
-            child::h:h2|
-            child::h:h3|
-            child::h:h4|
-            child::h:h5|
-            child::h:h6
-            ">
-            <!-- continue without text:p creation to child element -->
-            
-            <!-- when in this block is some text, display it in paragraph -->
-            <!-- this is not functional
-            <text:p>
-                <xsl:value-of select="string(.)"/>
-            </text:p>
-            -->
-            <!-- call template for each found element -->
-            <xsl:for-each select="*">
-                <xsl:apply-templates select="."/>
-            </xsl:for-each>
-        </xsl:when>
-        <xsl:otherwise>
+
+<xsl:template match="office:automatic-styles">
+    <office:automatic-styles>
+        <!-- copy the existing styles -->
+        <xsl:for-each select="child::*">
             <xsl:copy>
                 <xsl:copy-of select="@*"/>
                 <xsl:apply-templates/>
             </xsl:copy>
-        </xsl:otherwise>
-    </xsl:choose>
+        </xsl:for-each>
+        <!-- add missing styles -->
+        <xsl:call-template name="autostyles"/>
+        <!-- add missing syntax highlighting styles -->
+        <xsl:call-template name="highlight"/>
+    </office:automatic-styles>
 </xsl:template>
+
+<xsl:template match="office:styles">
+    <office:styles>
+        <!-- copy the existing styles -->
+        <xsl:for-each select="child::*">
+            <xsl:copy>
+                <xsl:copy-of select="@*"/>
+                <xsl:apply-templates/>
+            </xsl:copy>
+        </xsl:for-each>
+        <!-- add missing styles -->
+        <xsl:call-template name="mainstyles"/>
+    </office:styles>
+</xsl:template>
+
+<xsl:template match="office:font-face-decls">
+    <office:font-face-decls>
+        <!-- copy the existing fonts -->
+        <xsl:for-each select="child::*">
+            <xsl:copy>
+                <xsl:copy-of select="@*"/>
+                <xsl:apply-templates/>
+            </xsl:copy>
+        </xsl:for-each>
+        <!-- add missing fonts -->
+        <xsl:call-template name="fonts"/>
+    </office:font-face-decls>
+</xsl:template>
+
 
 <!-- Leave alone unknown tags -->
 <xsl:template match="*">
-    <xsl:if test="$debug">
-        <xsl:comment>Unknown tag : <xsl:value-of select="name(.)"/><xsl:value-of select="."/></xsl:comment>
-    </xsl:if>
     <xsl:copy>
         <xsl:copy-of select="@*"/>
         <xsl:apply-templates/>
     </xsl:copy>
 </xsl:template>
-
 
 </xsl:stylesheet>

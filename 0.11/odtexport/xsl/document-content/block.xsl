@@ -3,19 +3,26 @@
     
     xhtml2odt - XHTML to ODT XML transformation.
     Copyright (C) 2009 Aurelien Bompard
-    Based on the work on docbook2odt, by Roman Fordinal
+    Inspired by the work on docbook2odt, by Roman Fordinal
     http://open.comsultia.com/docbook2odf/
     
-    This program is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    as published by the Free Software Foundation; either version 2
-    of the License, or (at your option) any later version.
+    License: LGPL v2.1 or later <http://www.gnu.org/licenses/lgpl-2.1.html>
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
     
-    This program is distributed in the hope that it will be useful,
+    This library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
     
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+    MA  02110-1301  USA
+
 -->
 <xsl:stylesheet
     xmlns:h="http://www.w3.org/1999/xhtml"
@@ -57,24 +64,50 @@
 
 <xsl:template match="h:pre">
     <text:p text:style-name="Preformatted_20_Text">
-        <xsl:call-template name="pre.line">
-            <xsl:with-param name="content" select="string(.)"/>
-        </xsl:call-template>
+        <xsl:apply-templates mode="inparagraph"/>
     </text:p>
 </xsl:template>
 <xsl:template match="h:pre" mode="inparagraph"/>
 
+<xsl:template match="h:pre/text()" mode="inparagraph">
+    <!-- Don't generate the last line break before the </pre> -->
+    <xsl:variable name="content">
+        <xsl:choose>
+            <xsl:when test="contains(., '&#10;')
+                            and position() = last()
+                            and substring(., string-length(.)) = '&#10;'">
+                <xsl:value-of select="substring(., 1, string-length(.)-1)"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="."/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+    <!-- Now call the main template, which will handle the line-breaking -->
+    <xsl:call-template name="pre.line">
+        <xsl:with-param name="content" select="$content"/>
+    </xsl:call-template>
+</xsl:template>
+
 <xsl:template name="pre.line">
     <xsl:param name="content"/>
     <xsl:choose>
+        <!-- This line-breaking manipulation is classical, e.g.:
+             http://skew.org/xml/stylesheets/linefeed2br/
+        -->
         <xsl:when test="contains($content, '&#10;')">
             <xsl:value-of select="substring-before($content, '&#10;')"/>
-            <xsl:if test="substring-after($content, '&#10;') != ''">
-                <text:line-break/>
-                <xsl:call-template name="pre.line">
-                    <xsl:with-param name="content" select="substring-after($content, '&#10;')"/>
-                </xsl:call-template>
-            </xsl:if>
+            <text:line-break/>
+            <xsl:call-template name="pre.line">
+                <xsl:with-param name="content" select="substring-after($content, '&#10;')"/>
+            </xsl:call-template>
+        </xsl:when>
+        <xsl:when test="contains($content, '  ')">
+            <xsl:value-of select="substring-before($content, '  ')"/>
+            <xsl:text> &#xa0;</xsl:text>
+            <xsl:call-template name="pre.line">
+                <xsl:with-param name="content" select="substring-after($content, '  ')"/>
+            </xsl:call-template>
         </xsl:when>
         <xsl:otherwise>
             <xsl:value-of select="string($content)"/>

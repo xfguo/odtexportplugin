@@ -32,8 +32,6 @@ from trac.web.chrome import Chrome
 from trac.config import Option, IntOption, BoolOption, ListOption
 from trac.attachment import Attachment
 
-import odtstyle
-
 #pylint: disable-msg=C0301,C0111
 
 __all__ = ("ODTExportPlugin")
@@ -205,7 +203,7 @@ class ODTFile(object):
 
     def import_xhtml(self, xhtml):
         odt = self.xhtml_to_odt(xhtml)
-        #return odt
+        #self.env.log.debug(odt) # debug
         self.insert_content(odt)
         self.add_styles()
 
@@ -214,7 +212,7 @@ class ODTFile(object):
         xslt_doc = etree.parse(os.path.join(xsl_dir, "xhtml2odt.xsl"))
         transform = etree.XSLT(xslt_doc)
         xhtml = self.handle_images(xhtml)
-        #return xhtml
+        #self.env.log.debug(xhtml) # debug
         xhtml = etree.fromstring(xhtml) # must be valid xml
         if hasattr(etree.XSLT, "strparam"):
             url = etree.XSLT.strparam(
@@ -369,32 +367,18 @@ class ODTFile(object):
                     re.escape(self.options["cut_stop_keyword"]),
                     "", self.xml["content"])
 
-    def import_style(self, style, is_mainstyle=False):
-        style_name_mo = self.style_name_re.search(style)
-        name = style_name_mo.group(1)
-        if name in self.styles:
-            return # already added
-        if self.xml["content"].count('style:name="%s"' % name) > 0 or \
-           self.xml["styles"].count('style:name="%s"' % name) > 0:
-            return # already present in the template
-        if is_mainstyle:
-            self.styles[name] = style
-        else:
-            self.autostyles[name] = style
-
-    def import_font(self, font):
-        style_name_mo = self.style_name_re.search(font)
-        name = style_name_mo.group(1)
-        if name in self.fonts:
-            return # already added
-        if self.xml["styles"].count('<style:font-face style:name="%s"' % name) > 0 or \
-            self.xml["content"].count('<style:font-face style:name="%s"' % name) > 0:
-            return # already present in the template
-        self.fonts[name] = font
-
     def add_styles(self):
-        odtstyle.add_styles(self.template_dirs, self.xml["content"],
-                            self.import_style, self.import_font)
+        """
+        Add missing styles and fonts using the dedicated stylesheet from
+        xhtml2odt
+        """
+        xsl_dir = resource_filename(__name__, 'xsl')
+        xslt_doc = etree.parse(os.path.join(xsl_dir, "styles.xsl"))
+        transform = etree.XSLT(xslt_doc)
+        contentxml = etree.fromstring(self.xml["content"])
+        stylesxml = etree.fromstring(self.xml["styles"])
+        self.xml["content"] = str(transform(contentxml))
+        self.xml["styles"] = str(transform(stylesxml))
 
     def compile(self):
         # autostyles
@@ -410,10 +394,12 @@ class ODTFile(object):
                     self.xml[xmlfile] = self.xml[xmlfile].replace(
                         "</office:automatic-styles>",
                         "%s</office:automatic-styles>" % autostyles)
+        # main styles
         if self.styles:
             styles = "\n".join(self.styles.values())
             self.xml["styles"] = self.xml["styles"].replace(
                 "</office:styles>", "%s</office:styles>" % styles)
+        # fonts
         if self.fonts:
             fonts = "\n".join(self.fonts.values())
             for xmlfile in ["content", "styles"]:

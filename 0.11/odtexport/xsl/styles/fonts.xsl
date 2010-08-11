@@ -25,7 +25,6 @@
 
 -->
 <xsl:stylesheet
-    xmlns:h="http://www.w3.org/1999/xhtml"
     xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -48,69 +47,16 @@
     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:presentation="urn:oasis:names:tc:opendocument:xmlns:presentation:1.0"
-    exclude-result-prefixes="office xsl dc text style table draw fo xlink meta number svg chart dr3d math form script dom xforms xsd xsi presentation h"
     version="1.0">
-    
-<!-- SETTINGS -->
-<xsl:decimal-format name="staff" digit="D" />
-<xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="utf-8"/>
-<!--<xsl:strip-space elements="*"/>-->
-<!--<xsl:preserve-space elements=""/>-->
 
+<xsl:template name="fonts">
 
-<xsl:include href="param.xsl"/>
-<xsl:include href="document-content.xsl"/>
-<xsl:include href="specific.xsl"/>
-
-
-<xsl:template match="/">
-    <xsl:apply-templates/>
-</xsl:template>
-
-<!-- ignore ODT paragraph inside ODT paragraphs -->
-<xsl:template match="text:p">
-    <xsl:choose>
-        <xsl:when test="
-            descendant::h:p|
-            child::h:h1|
-            child::h:h2|
-            child::h:h3|
-            child::h:h4|
-            child::h:h5|
-            child::h:h6
-            ">
-            <!-- continue without text:p creation to child element -->
-            
-            <!-- when in this block is some text, display it in paragraph -->
-            <!-- this is not functional
-            <text:p>
-                <xsl:value-of select="string(.)"/>
-            </text:p>
-            -->
-            <!-- call template for each found element -->
-            <xsl:for-each select="*">
-                <xsl:apply-templates select="."/>
-            </xsl:for-each>
-        </xsl:when>
-        <xsl:otherwise>
-            <xsl:copy>
-                <xsl:copy-of select="@*"/>
-                <xsl:apply-templates/>
-            </xsl:copy>
-        </xsl:otherwise>
-    </xsl:choose>
-</xsl:template>
-
-<!-- Leave alone unknown tags -->
-<xsl:template match="*">
-    <xsl:if test="$debug">
-        <xsl:comment>Unknown tag : <xsl:value-of select="name(.)"/><xsl:value-of select="."/></xsl:comment>
+    <xsl:if test="count(//office:font-face-decls/style:font-face[@style:name = 'DejaVu Sans Mono']) = 0">
+        <style:font-face style:name="DejaVu Sans Mono"
+                         svg:font-family="&apos;DejaVu Sans Mono&apos;"
+                         style:font-family-generic="modern" style:font-pitch="fixed"/>
     </xsl:if>
-    <xsl:copy>
-        <xsl:copy-of select="@*"/>
-        <xsl:apply-templates/>
-    </xsl:copy>
-</xsl:template>
 
+</xsl:template>
 
 </xsl:stylesheet>
