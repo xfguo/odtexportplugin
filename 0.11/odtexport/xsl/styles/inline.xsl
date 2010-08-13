@@ -25,6 +25,7 @@
 
 -->
 <xsl:stylesheet
+    xmlns:h="http://www.w3.org/1999/xhtml"
     xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -49,14 +50,65 @@
     xmlns:presentation="urn:oasis:names:tc:opendocument:xmlns:presentation:1.0"
     version="1.0">
 
-<xsl:template name="fonts">
+<!--
+     Create a specific automatic-style for each <span> tag with a style
+     attribute.
+     Parse the CSS values in the style attribute and convert them verbatim to
+     ODT XML. Luckily, the propreties are very often identical in name and
+     syntax. If not, they will be silently ignored by the application, so it's
+     not a big deal.
+-->
 
-    <xsl:if test="count(//office:font-face-decls/style:font-face[@style:name = 'DejaVu Sans Mono']) = 0">
-        <style:font-face style:name="DejaVu Sans Mono"
-                         svg:font-family="&apos;DejaVu Sans Mono&apos;"
-                         style:font-family-generic="modern" style:font-pitch="fixed"/>
+<xsl:template name="inline">
+
+    <xsl:for-each select="//h:span[@style]">
+        <style:style style:family="text">
+            <xsl:attribute name="style:name">
+                <xsl:value-of select="concat('inline-style.', generate-id(.))"/>
+            </xsl:attribute>
+            <style:text-properties>
+                <xsl:call-template name="css.style.multi">
+                    <xsl:with-param name="style" select="@style"/>
+                </xsl:call-template>
+            </style:text-properties>
+        </style:style>
+    </xsl:for-each>
+
+</xsl:template>
+
+<!-- pass the content of the style attribute to this template, it will split
+     the CSS properties -->
+<xsl:template name="css.style.multi">
+    <xsl:param name="style"/>
+    <xsl:choose>
+        <xsl:when test="contains($style, ';')">
+            <xsl:call-template name="css.style.multi">
+                <xsl:with-param name="style" select="substring-before($style, ';')"/>
+            </xsl:call-template>
+            <xsl:call-template name="css.style.multi">
+                <xsl:with-param name="style" select="substring-after($style, ';')"/>
+            </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:call-template name="css.style.single">
+                <xsl:with-param name="name" select="substring-before($style, ':')"/>
+                <xsl:with-param name="value" select="substring-after($style, ':')"/>
+            </xsl:call-template>
+        </xsl:otherwise>
+    </xsl:choose>
+</xsl:template>
+
+<!-- pass the individual CSS properties to this template, it will create the
+     ODT XML style attributes -->
+<xsl:template name="css.style.single">
+    <xsl:param name="name"/>
+    <xsl:param name="value"/>
+    <xsl:if test="translate($name,' ','') != '' and
+                  translate($value,' ','') != ''">
+        <xsl:attribute name="{concat('fo:',translate($name,' ',''))}">
+            <xsl:value-of select="translate($value,' ','')"/>
+        </xsl:attribute>
     </xsl:if>
-
 </xsl:template>
 
 </xsl:stylesheet>
