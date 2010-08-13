@@ -314,7 +314,7 @@
                      style:display-name="Preformatted Text" style:family="paragraph"
                      style:parent-style-name="Standard" style:class="html">
             <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="1cm"
-                                        fo:margin-top="0cm" fo:margin-bottom="0.2cm"/>
+                                        fo:margin-top="0cm" fo:margin-bottom="0cm"/>
             <style:text-properties style:font-name="DejaVu Sans Mono"
                                    fo:font-size="9pt"/>
         </style:style>
@@ -326,6 +326,15 @@
                      style:parent-style-name="Preformatted_20_Text">
             <style:paragraph-properties fo:padding="0.05cm" style:shadow="none"
                                         fo:border="0.002cm solid #c0c0c0"/>
+        </style:style>
+    </xsl:if>
+
+    <xsl:if test="count(//office:styles/style:style[@style:name = 'Source_20_Code_20_Numbered']) = 0">
+        <style:style style:name="Source_20_Code_20_Numbered"
+                     style:display-name="Source Code Numbered" style:family="paragraph"
+                     style:list-style-name="Numbering_20_1"
+                     style:parent-style-name="Source_20_Code">
+            <style:paragraph-properties text:number-lines="true" text:line-number="1"/>
         </style:style>
     </xsl:if>
 
