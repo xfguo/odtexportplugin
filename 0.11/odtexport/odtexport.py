@@ -15,6 +15,7 @@ import os
 import zipfile
 import urllib2
 import urlparse
+import datetime
 
 # pylint: disable-msg=E0611
 from pkg_resources import resource_filename
@@ -49,6 +50,12 @@ class ODTExportPlugin(Component):
     img_dpi = IntOption('odtexport', 'dpi', '96')
     get_remote_images = BoolOption('odtexport', 'get_remote_images', True)
     replace_keyword = Option('odtexport', 'replace_keyword', 'TRAC-ODT-INSERT')
+    wikiversion_keyword = Option('odtexport', 'wikiversion_keyword',
+                                 'TRAC-ODT-WIKIVERSION')
+    wikiname_keyword = Option('odtexport', 'wikiname_keyword',
+                              'TRAC-ODT-WIKINAME')
+    timestamp_keyword = Option('odtexport', 'timestamp_keyword',
+                               'TRAC-ODT-TIMESTAMP')
     cut_start_keyword = Option('odtexport', 'cut_start_keyword',
                                'TRAC-ODT-CUT-START')
     cut_stop_keyword = Option('odtexport', 'cut_stop_keyword',
@@ -58,7 +65,8 @@ class ODTExportPlugin(Component):
 
     # IContentConverter methods
     def get_supported_conversions(self):
-        yield ('odt', 'OpenDocument', 'odt', 'text/x-trac-wiki', 'application/vnd.oasis.opendocument.text', 5)
+        yield ('odt', 'OpenDocument', 'odt', 'text/x-trac-wiki',
+               'application/vnd.oasis.opendocument.text', 5)
 
 
     def convert_content(self, req, input_type, content, output_type): # pylint: disable-msg=W0613
@@ -67,13 +75,17 @@ class ODTExportPlugin(Component):
         template = self.get_template_name(content)
         html = self.wiki_to_html(content, req)
         #return (html, "text/plain")
-        odtfile = ODTFile(self.page_name, template, self.env, # pylint: disable-msg=E1101
+        odtfile = ODTFile(self.page_name, req.args.get('version', 'latest'),
+                          template, self.env, # pylint: disable-msg=E1101
                           options={
                               "img_width": self.img_width,
                               "img_height": self.img_height,
                               "img_dpi": self.img_dpi,
                               "get_remote_images": self.get_remote_images,
                               "replace_keyword": self.replace_keyword,
+                              "wikiversion_keyword": self.wikiversion_keyword,
+                              "wikiname_keyword": self.wikiname_keyword,
+                              "timestamp_keyword": self.timestamp_keyword,
                               "cut_start_keyword": self.cut_start_keyword,
                               "cut_stop_keyword": self.cut_stop_keyword,
                           })
@@ -152,11 +164,12 @@ class ODTFile(object):
     :ivar template: the filename of the ODT template (without the path)
     :type template: str
     :ivar template_dirs: the list of directories to search for the ODT
-        template. The first match found is used. 
+        template. The first match found is used.
     """
 
-    def __init__(self, page_name, template, env, options):
+    def __init__(self, page_name, page_version, template, env, options):
         self.page_name = page_name
+        self.page_version = page_version
         self.template = template
         self.env = env
         self.options = options
@@ -315,9 +328,10 @@ class ODTFile(object):
     def handle_img(self, full_tag, src, filename):
         self.env.log.debug('Importing image: %s' % filename)
         if not os.path.exists(filename):
-            raise ODTExportError('Image "%s" is not readable or does not exist' % filename)
-        # TODO: generate a filename (with tempfile.mkstemp) to avoid weird filenames.
-        #       Maybe use img.format for the extension
+            raise ODTExportError('Image "%s" is not readable or does not exist'
+                                 % filename)
+        # TODO: generate a filename (with tempfile.mkstemp) to avoid weird
+        # filenames. Maybe use img.format for the extension
         if not os.path.exists(os.path.join(self.tmpdir, "Pictures")):
             os.mkdir(os.path.join(self.tmpdir, "Pictures"))
         shutil.copy(filename, os.path.join(self.tmpdir, "Pictures",
@@ -332,10 +346,12 @@ class ODTFile(object):
             self.env.log.debug('Detected size: %spx x %spx' % (width, height))
             width_mo = re.search('width="([0-9]+)(?:px)?"', full_tag)
             if width_mo:
-                newwidth = float(width_mo.group(1)) / float(self.options["img_dpi"]) * INCH_TO_CM
+                newwidth = (float(width_mo.group(1)) /
+                            float(self.options["img_dpi"]) * INCH_TO_CM)
                 height = height * newwidth / width
                 width = newwidth
-                self.env.log.debug('Forced width: %spx. Size will be: %scm x %scm' % (width_mo.group(1), width, height))
+                self.env.log.debug('Forced width: %spx. Size will be: %scm x %scm'
+                                   % (width_mo.group(1), width, height))
                 full_tag = full_tag.replace(width_mo.group(), "")
             else:
                 width = width / float(self.options["img_dpi"]) * INCH_TO_CM
@@ -344,9 +360,22 @@ class ODTFile(object):
         return full_tag.replace(src, newsrc)
 
     def insert_content(self, content):
-        self.options["replace_keyword"] = str(self.options["replace_keyword"])
-        self.options["cut_start_keyword"] = str(self.options["cut_start_keyword"])
-        self.options["cut_stop_keyword"] = str(self.options["cut_stop_keyword"])
+        for kw in ["replace", "wikiversion", "wikiname", "timestamp",
+                   "cut_start", "cut_stop"]:
+            self.options[kw+"_keyword"] = str(self.options[kw+"_keyword"])
+
+        for k, v in {'wikiversion': str(self.page_version),
+                     'wikiname': str(self.page_name),
+                     'timestamp': str(datetime.datetime.now())}.iteritems():
+            for xmltype in self.xml.keys():
+                #self.env.log.debug("Key %s, Value %s, xml %s\n"%(k,v,xmltype))
+                if self.options[k+"_keyword"] and self.xml[xmltype].count(
+                    self.options[k+"_keyword"]) > 0:
+                    self.xml[xmltype] = re.sub(
+                        re.escape(self.options[k+"_keyword"]),
+                        v, self.xml[xmltype])
+
+
         if self.options["replace_keyword"] and self.xml["content"].count(
                 self.options["replace_keyword"]) > 0:
             self.xml["content"] = re.sub(
