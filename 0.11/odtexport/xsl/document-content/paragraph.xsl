@@ -54,7 +54,9 @@
 <xsl:template match="h:p">
     <xsl:call-template name="paragraph"/>
 </xsl:template>
-<xsl:template match="h:p" mode="inparagraph"/>
+<xsl:template match="h:p" mode="inparagraph">
+    <xsl:apply-templates mode="inparagraph"/>
+</xsl:template>
 
 <xsl:template name="paragraph">
     <xsl:choose>
@@ -63,6 +65,7 @@
             child::h:ol|
             child::h:blockquote|
             child::h:pre |
+            child::h:dl |
             child::h:div
             ">
             <xsl:for-each select="
@@ -70,6 +73,7 @@
                     child::h:ol |
                     child::h:blockquote |
                     child::h:pre |
+                    child::h:dl |
                     child::h:div
                     ">
                 <!-- Paragraph with the text before -->
@@ -113,15 +117,16 @@
                     <xsl:text>list-item-number</xsl:text>
                 </xsl:when>
                 <xsl:when test="$subject/../parent::h:blockquote">Quotations</xsl:when>
-                <xsl:when test="contains(@style,'text-align:') and contains(@style,'center')">
-                    <xsl:text>center</xsl:text>
-                </xsl:when>
+                <xsl:when test="contains(@style,'text-align:') and contains(@style,'left')">left</xsl:when>
+                <xsl:when test="contains(@style,'text-align:') and contains(@style,'center')">center</xsl:when>
+                <xsl:when test="contains(@style,'text-align:') and contains(@style,'right')">right</xsl:when>
+                <xsl:when test="contains(@style,'text-align:') and contains(@style,'justify')">justify</xsl:when>
                 <xsl:when test="$subject/self::h:address or (name($subject) = '' and $subject/parent::h:address)">Sender</xsl:when>
                 <xsl:when test="$subject/self::h:center or (name($subject) = '' and $subject/parent::h:center)">center</xsl:when>
                 <xsl:when test="$subject/self::h:th or (name($subject) = '' and $subject/parent::h:th)">Table_20_Heading</xsl:when>
                 <xsl:when test="$subject/self::h:td or (name($subject) = '' and $subject/parent::h:td)">Table_20_Contents</xsl:when>
-                <xsl:when test="$subject/self::h:dt or (name($subject) = '' and $subject/parent::h:dt)">Table_20_Contents</xsl:when>
-                <xsl:when test="$subject/self::h:dd or (name($subject) = '' and $subject/parent::h:dd)">Table_20_Contents</xsl:when>
+                <xsl:when test="$subject/self::h:dt or (name($subject) = '' and $subject/parent::h:dt)">Definition_20_Term</xsl:when>
+                <xsl:when test="$subject/self::h:dd or (name($subject) = '' and $subject/parent::h:dd)">Definition_20_Description</xsl:when>
                 <xsl:otherwise>Text_20_body</xsl:otherwise>
             </xsl:choose>
         </xsl:attribute>

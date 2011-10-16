@@ -54,7 +54,7 @@
     <xsl:apply-templates/>
 </xsl:template>
 <xsl:template match="h:div" mode="inparagraph">
-    <xsl:apply-templates/>
+    <xsl:apply-templates mode="inparagraph"/>
 </xsl:template>
 
 <xsl:template match="h:html">
@@ -68,15 +68,19 @@
 </xsl:template>
 
 <xsl:template match="h:span"/>
-<xsl:template match="h:span[@style]" mode="inparagraph">
-    <!-- leave the style handling to xsl/styles.xsl -->
-    <xsl:copy>
-        <xsl:copy-of select="@*"/>
-        <xsl:apply-templates/>
-    </xsl:copy>
-</xsl:template>
 <xsl:template match="h:span" mode="inparagraph">
-    <xsl:apply-templates mode="inparagraph"/>
+    <xsl:choose>
+        <xsl:when test="translate(@style,' ','') != ''">
+            <!-- leave the style handling to xsl/styles.xsl -->
+            <xsl:copy>
+                <xsl:copy-of select="@*"/>
+                <xsl:apply-templates mode="inparagraph"/>
+            </xsl:copy>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:apply-templates mode="inparagraph"/>
+        </xsl:otherwise>
+    </xsl:choose>
 </xsl:template>
 
 <xsl:template match="h:script"/>

@@ -52,5 +52,7 @@
 <xsl:include href="specific/trac.xsl"/>
 <xsl:include href="specific/pygments.xsl"/>
 <xsl:include href="specific/geshi.xsl"/>
+<xsl:include href="specific/elyxer.xsl"/>
+<xsl:include href="specific/lyx.xsl"/>
 
 </xsl:stylesheet>

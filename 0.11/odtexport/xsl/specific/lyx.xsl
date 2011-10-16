@@ -25,6 +25,7 @@
 
 -->
 <xsl:stylesheet
+    xmlns:h="http://www.w3.org/1999/xhtml"
     xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -50,21 +51,51 @@
     version="1.0">
 
 
-    <xsl:param name="debug"></xsl:param>
 
-    <!-- URL of the converted page -->
-    <xsl:param name="url">http://localhost</xsl:param>
+<!-- Text -->
+<xsl:template match="h:div[@class='standard']">
+    <text:p text:style-name="Text_20_body">
+        <xsl:apply-templates mode="inparagraph"/>
+    </text:p>
+</xsl:template>
 
-    <!-- in the text to convert, heading tags start below this level
-         (0 for h1, 1 for h2, etc.) -->
-    <xsl:param name="heading_minus_level">0</xsl:param>
+<xsl:template match="h:div[@class='date']">
+    <text:p text:style-name="Subtitle">
+        <xsl:apply-templates mode="inparagraph"/>
+    </text:p>
+</xsl:template>
 
-    <!-- default image size -->
-    <xsl:param name="img_default_width">8cm</xsl:param>
-    <xsl:param name="img_default_height">6cm</xsl:param>
+<!-- Title and Subtitle -->
+<xsl:template match="h:div[@class='subject']">
+    <text:p text:style-name="Title">
+        <xsl:apply-templates mode="inparagraph"/>
+    </text:p>
+</xsl:template>
+<xsl:template match="h:h1[@class='title']">
+    <text:p text:style-name="Title">
+        <xsl:apply-templates mode="inparagraph"/>
+    </text:p>
+</xsl:template>
+<xsl:template match="h:h1[@class='subtitle']">
+    <text:p text:style-name="Subtitle">
+        <xsl:apply-templates mode="inparagraph"/>
+    </text:p>
+</xsl:template>
 
-    <!-- images smaller that this will be placed inline (e.g. smileys) -->
-    <xsl:param name="img_inline_threshold">2</xsl:param>
+<!-- Footnotes -->
+<xsl:template match="h:div[@class='foot']" mode="inparagraph">
+    <text:note text:note-class="footnote">
+        <xsl:apply-templates mode="inparagraph"/>
+    </text:note>
+</xsl:template>
+<xsl:template match="h:span[@class='foot_label']" mode="inparagraph"/>
+<xsl:template match="h:span[@class='foot_label']"/>
+<xsl:template match="h:div[@class='foot_inner']" mode="inparagraph">
+    <text:note-body>
+        <text:p text:style-name="Footnote">
+            <xsl:apply-templates mode="inparagraph"/>
+        </text:p>
+    </text:note-body>
+</xsl:template>
 
 </xsl:stylesheet>
-
